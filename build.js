@@ -3,7 +3,6 @@
 (async _ => {
 
 	// imports
-	const Preprocessor = require('preprocessor');
 	const fs = require('fs');
 	const tar = require('targz');
 	const { compile } = require('nexe');
@@ -69,7 +68,9 @@
 			bundle: true,
 			resources: ['src/Nexus.js', 'src/Genesis.js'],
 			fakeArgv: true,
-			temp: 'NexeBin'
+			temp: 'NexeBin',
+			build: true,
+			loglevel: 'verbose'
 		};
 
 		console.log('> Calling Nexe with\n');

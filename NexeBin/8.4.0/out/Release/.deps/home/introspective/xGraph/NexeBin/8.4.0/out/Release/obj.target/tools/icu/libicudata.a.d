@@ -1,0 +1,1 @@
+cmd_/home/introspective/xGraph/NexeBin/8.4.0/out/Release/obj.target/tools/icu/libicudata.a := rm -f /home/introspective/xGraph/NexeBin/8.4.0/out/Release/obj.target/tools/icu/libicudata.a && ar crsT /home/introspective/xGraph/NexeBin/8.4.0/out/Release/obj.target/tools/icu/libicudata.a /home/introspective/xGraph/NexeBin/8.4.0/out/Release/obj.target/icudata/gen/icusmdt59_dat.o
