@@ -1,6 +1,6 @@
 global.pidInterchange = (pid) => { return { Value: pid, Format: 'is.xgraph.pid', toString: function () { return this.Value } } };
-module.exports = function xGraph(__options={}) {
-	this.__options=__options;
+module.exports = function xGraph(__options = {}) {
+	this.__options = __options;
 	let eventListeners = {
 		exit: [],
 		setup: [],
@@ -46,6 +46,14 @@ module.exports = function xGraph(__options={}) {
 			var ImpCache = {};					// {<Implementation path>: <Implementation(e.g. disp)>}
 			var packagejson = {};				// The compiled package.json, built from Modules
 			var originalConsoleLog = console.log;
+			var cache = {
+				state: cacheState
+			};
+			global.API={
+				cache//,
+				//module,
+				//entity
+			}
 			var Nxs = {
 				genPid,
 				genModule,
@@ -54,10 +62,9 @@ module.exports = function xGraph(__options={}) {
 				deleteEntity,
 				saveEntity,
 				getFile,
-				GetModule,
 				loadDependency,
 				sendMessage,
-				exit,
+				exit
 			};
 
 			//
@@ -205,7 +212,7 @@ module.exports = function xGraph(__options={}) {
 
 			function indirectEvalImp(entString) {
 				let imp = (1, eval)(entString);
-				if(typeof imp != 'undefined') return imp;
+				if (typeof imp != 'undefined') return imp;
 				else return { dispatch: ((1, eval)(`(function(){ return ${entString} })()`)).prototype };
 			}
 
@@ -391,17 +398,6 @@ module.exports = function xGraph(__options={}) {
 			//
 			//
 
-
-			// #ifndef BUILT
-			/**
-			 * Check if the system is running from binary
-			 */
-			function isBinary() {
-				return (typeof tar !== 'undefined');
-			}
-			// #endif
-
-
 			/**
 			 * replace the macros for local path info
 			 * @param {string} str the string which to return the macro of
@@ -440,6 +436,68 @@ module.exports = function xGraph(__options={}) {
 				return s;
 			}
 
+
+			/**
+			 * Zip up the current cache. A snapshot of the current cache state.
+			 */
+			function cacheState(){
+				return (new Promise(async (resolve, reject) => {
+					let zipmod = new jszip();
+
+					//recursively zip the cache
+					await zipDirChidren(zipmod, __options.cache);
+
+					zipmod.generateAsync({ type: "uint8array" }).then((dat, fail) => {
+						if (fail) {
+							log.w("Failed to create cache zip.");
+							return;
+						}
+
+						resolve(dat);
+					});
+
+					async function zipDirChidren(ziproot, containingPath) {
+						let files;
+						try {
+							files = fs.readdirSync(containingPath);
+						} catch (err) {
+							err += ' \nCache \"' + containingPath + '\" not available'
+							log.e(err);
+							fun(err);
+							return;
+						}
+						if (!files) {
+							err += ' \nCache \"' + containingPath + '\" not available'
+							log.e(err);
+							fun(err);
+							return;
+						}
+						for (let ifile = 0; ifile < files.length; ifile++) {
+							var file = files[ifile];
+							var path = containingPath + '/' + file;
+							let stat = await new Promise(async (res, rej) => {
+								fs.lstat(path, (err, stat) => {
+									if (err) rej(err)
+									else res(stat);
+								})
+							});
+
+							if (stat) {
+								if (!stat.isDirectory()) {
+									try {
+										var dat = fs.readFileSync(path);
+									} catch (err) {
+										log.e(`zipCache: error reading file ${path}: ${err}`);
+									}
+									ziproot.file(file, dat);
+								} else {
+									await zipDirChidren(ziproot.folder(file), path)
+								}
+							}
+						}
+					}
+				}));
+			}
 
 			/**
 			 * generate a 32 character hex pid
@@ -533,7 +591,9 @@ module.exports = function xGraph(__options={}) {
 				var Par = par;
 				var Imp = imp;
 				var Vlt = {};
-
+				var API={
+					cache
+				}
 				return {
 					Par,
 					Vlt,
@@ -548,7 +608,8 @@ module.exports = function xGraph(__options={}) {
 					save,
 					getFile,
 					require,
-					exit
+					exit,
+
 				};
 
                 /**
@@ -592,7 +653,7 @@ module.exports = function xGraph(__options={}) {
 						}
 						log.e('Nada Cmd:' + com.Cmd);
 						fun('Nada', com);
-					} catch(e) {
+					} catch (e) {
 						log.e(`Error in ${this.Par.Entity} Command ${com.Cmd}`)
 						log.e(e.toString());
 
@@ -1235,7 +1296,7 @@ module.exports = function xGraph(__options={}) {
 								mod.file(par.Entity).async("string").then((string) => res(string))
 							});
 							ImpCache[impkey] = indirectEvalImp(entString);
-							
+
 						}
 						EntCache[par.Pid] = new Entity(Nxs, ImpCache[impkey], par);
 					})());
