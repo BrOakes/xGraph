@@ -738,7 +738,6 @@ Examples:
 		} catch (e) {
 		}
 	}
-
 };
 
 if (require.main === module || !('id' in module)) {
