@@ -236,7 +236,7 @@ module.exports = function xGraph(__options = {}) {
 				if (typeof imp != 'undefined') return imp;
 				else return {
 					dispatch: ((1, eval)(`//# sourceURL=${entName}
-				(function(){ return ${entString} })()`)).prototype
+				(function(){ return (\n${entString}) })()`)).prototype
 				};
 			}
 
