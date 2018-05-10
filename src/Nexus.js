@@ -156,13 +156,34 @@ module.exports = function xGraph(__options = {}) {
 									else if (obj.hasOwnProperty('toString')) arr.push(obj.toString())
 									else {
 										try {
-											arr.push(JSON.stringify(obj, null, 2));
+											let loopParse = (obj, tab = 0) => {
+												let str = "";
+
+												for (let key in obj) {
+													// process.stdout.write(`key:${key}, typeof:${typeof obj[key]}\n`);
+													if (obj[key] == null) {
+														str += "  ".repeat(tab) + key + ": " + "null" + "\n";
+													} else if (typeof obj[key] == "object") {
+														str += "  ".repeat(tab) + key + ": " + "{\n" + loopParse(obj[key], tab + 1) + "  ".repeat(tab) + "}\n";
+													} else if (typeof obj[key] == "function") {
+														str += "  ".repeat(tab) + key + ": " + "function" + "\n";
+													} else if (typeof obj[key] == "undefined") {
+														str += "  ".repeat(tab) + key + ": " + "undefined" + "\n";
+													} else {
+														str += "  ".repeat(tab) + key + ": " + obj[key].toString() + "\n";
+													}
+												}
+												return str;
+											}
+											arr.push(`{\n${loopParse(obj, 1)}}`);
 										} catch (e) {
 											arr.push('Object keys: ' + JSON.stringify(Object.keys(obj), null, 2));
 										}
 									}
 								} else if (typeof obj == 'undefined') {
 									arr.push('undefined');
+								} else if (typeof obj == 'function') {
+									arr.push('function');
 								} else {
 									arr.push(obj.toString());
 								}
@@ -210,10 +231,13 @@ module.exports = function xGraph(__options = {}) {
 
 			}
 
-			function indirectEvalImp(entString) {
+			function indirectEvalImp(entString, entName) {
 				let imp = (1, eval)(entString);
 				if (typeof imp != 'undefined') return imp;
-				else return { dispatch: ((1, eval)(`(function(){ return ${entString} })()`)).prototype };
+				else return {
+					dispatch: ((1, eval)(`//# sourceURL=${entName}
+				(function(){ return ${entString} })()`)).prototype
+				};
 			}
 
 
@@ -794,7 +818,7 @@ module.exports = function xGraph(__options = {}) {
 					let entString = await new Promise(async (res, rej) => {
 						mod.file(par.Entity).async("string").then((string) => res(string))
 					});
-					ImpCache[impkey] = indirectEvalImp(entString);
+					ImpCache[impkey] = indirectEvalImp(entString, par.Entity);
 				}
 
 				par.Pid = par.Pid || genPid();
@@ -1033,7 +1057,7 @@ module.exports = function xGraph(__options = {}) {
 						});
 
 						log.v(`Spinning up entity ${folder}-${par.Entity.split('.')[0]}`);
-						ImpCache[impkey] = indirectEvalImp(entString);
+						ImpCache[impkey] = indirectEvalImp(entString, par.Entity);
 						BuildEnt();
 					});
 
@@ -1289,7 +1313,7 @@ module.exports = function xGraph(__options = {}) {
 							let entString = await new Promise(async (res, rej) => {
 								mod.file(par.Entity).async("string").then((string) => res(string))
 							});
-							ImpCache[impkey] = indirectEvalImp(entString);
+							ImpCache[impkey] = indirectEvalImp(entString, par.Entity);
 
 						}
 						EntCache[par.Pid] = new Entity(Nxs, ImpCache[impkey], par);
